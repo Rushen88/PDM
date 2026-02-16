@@ -1,0 +1,12 @@
+from django.apps import AppConfig
+
+
+class PersistenceConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'infrastructure.persistence'
+    label = 'persistence'
+    verbose_name = 'PDM Persistence Layer'
+    
+    def ready(self):
+        # Import signal handlers if any
+        pass

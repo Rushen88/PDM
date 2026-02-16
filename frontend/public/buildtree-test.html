@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuildTree Тест</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+
+        .success {
+            color: #4ec9b0;
+        }
+
+        .error {
+            color: #f14c4c;
+        }
+
+        .warning {
+            color: #cca700;
+        }
+
+        pre {
+            background: #2d2d2d;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            cursor: pointer;
+        }
+
+        #output {
+            margin-top: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #555;
+            padding: 5px 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #3c3c3c;
+        }
+
+        .level-0 {
+            background: #2a4a2a;
+        }
+
+        .level-1 {
+            background: #2a2a4a;
+        }
+
+        .level-2 {
+            background: #4a2a2a;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔧 BuildTree Тест</h1>
+    <p>Эта страница тестирует логику buildTree с реальными данными API.</p>
+
+    <div>
+        <button onclick="fetchAndTest()">1. Загрузить данные и тестировать</button>
+        <button onclick="testWithFile()">2. Тест с test_api_response.json</button>
+    </div>
+
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(msg, type = 'normal') {
+            const p = document.createElement('p');
+            p.className = type;
+            p.textContent = msg;
+            output.appendChild(p);
+        }
+
+        function buildTree(items) {
+            log('=== buildTree START ===');
+            log(`Input items: ${items.length}`);
+
+            // Check types
+            if (items.length > 0) {
+                const first = items[0];
+                log(`First item id type: ${typeof first.id}`);
+                log(`First item id value: ${first.id}`);
+
+                const withParent = items.find(i => i.parent_item);
+                if (withParent) {
+                    log(`Item with parent - parent_item type: ${typeof withParent.parent_item}`);
+                    log(`Item with parent - parent_item value: ${withParent.parent_item}`);
+                }
+            }
+
+            const itemMap = new Map();
+            const roots = [];
+
+            // Create map
+            items.forEach(item => {
+                itemMap.set(item.id, { ...item, treeChildren: [], level: 0 });
+            });
+
+            log(`ItemMap size: ${itemMap.size}`);
+
+            // Build tree
+            let foundParent = 0;
+            let notFoundParent = 0;
+
+            items.forEach(item => {
+                const node = itemMap.get(item.id);
+                if (item.parent_item) {
+                    const parent = itemMap.get(item.parent_item);
+                    if (parent) {
+                        parent.treeChildren.push(node);
+                        foundParent++;
+                    } else {
+                        log(`ORPHAN: ${item.name} -> parent ${item.parent_item} NOT FOUND!`, 'error');
+                        roots.push(node);
+                        notFoundParent++;
+                    }
+                } else {
+                    roots.push(node);
+                }
+            });
+
+            log(`Found parent: ${foundParent}`, foundParent > 0 ? 'success' : 'error');
+            log(`Not found parent (orphans): ${notFoundParent}`, notFoundParent === 0 ? 'success' : 'error');
+            log(`Roots: ${roots.length}`, roots.length === 1 ? 'success' : 'error');
+
+            // Set levels
+            const setLevels = (node, level) => {
+                node.level = level;
+                node.treeChildren.sort((a, b) => a.position - b.position);
+                node.treeChildren.forEach(child => setLevels(child, level + 1));
+            };
+            roots.forEach(root => setLevels(root, 0));
+
+            log('=== buildTree END ===');
+            return roots;
+        }
+
+        function displayTree(roots) {
+            if (roots.length === 0) {
+                log('No roots to display!', 'error');
+                return;
+            }
+
+            const table = document.createElement('table');
+            const header = table.insertRow();
+            header.innerHTML = '<th>Level</th><th>Name</th><th>Children</th><th>ID (first 8)</th><th>Parent (first 8)</th>';
+
+            const flatten = (node) => {
+                const row = table.insertRow();
+                row.className = `level-${node.level % 3}`;
+                row.innerHTML = `
+                    <td>${'—'.repeat(node.level)} ${node.level}</td>
+                    <td>${node.name}</td>
+                    <td>${node.treeChildren.length}</td>
+                    <td>${node.id.slice(0, 8)}</td>
+                    <td>${node.parent_item ? node.parent_item.slice(0, 8) : 'null'}</td>
+                `;
+                node.treeChildren.forEach(flatten);
+            };
+
+            roots.forEach(flatten);
+            output.appendChild(table);
+        }
+
+        async function fetchAndTest() {
+            output.innerHTML = '';
+            log('Fetching data from API...');
+
+            try {
+                // First login
+                const loginResp = await fetch('/api/v1/auth/login/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'admin123' })
+                });
+
+                if (!loginResp.ok) {
+                    log('Login failed! Using existing token...', 'warning');
+                }
+
+                const loginData = await loginResp.json();
+                const token = loginData.access || localStorage.getItem('pdm_access_token');
+
+                if (!token) {
+                    log('No token available!', 'error');
+                    return;
+                }
+
+                log('Login successful');
+
+                // Find project
+                const projectsResp = await fetch('/api/v1/projects/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const projectsData = await projectsResp.json();
+                const project = projectsData.results.find(p => p.name.includes('СТЕНД'));
+
+                if (!project) {
+                    log('Project СТЕНД not found!', 'error');
+                    return;
+                }
+
+                log(`Found project: ${project.name} (ID: ${project.id})`);
+
+                // Fetch items
+                const itemsResp = await fetch(`/api/v1/project-items/?project=${project.id}&page_size=1000`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const itemsData = await itemsResp.json();
+
+                log(`Fetched ${itemsData.count} items`);
+
+                // Test buildTree
+                const tree = buildTree(itemsData.results);
+
+                // Display result
+                log('');
+                log('=== TREE STRUCTURE ===', 'success');
+                displayTree(tree);
+
+            } catch (e) {
+                log(`Error: ${e.message}`, 'error');
+                console.error(e);
+            }
+        }
+
+        async function testWithFile() {
+            output.innerHTML = '';
+            log('Loading test_api_response.json...');
+
+            try {
+                const resp = await fetch('/test_api_response.json');
+                if (!resp.ok) {
+                    log('File not found! Copy test_api_response.json to frontend/public/', 'error');
+                    return;
+                }
+
+                const data = await resp.json();
+                log(`Loaded ${data.count} items from file`);
+
+                // Test buildTree
+                const tree = buildTree(data.results);
+
+                // Display result
+                log('');
+                log('=== TREE STRUCTURE ===', 'success');
+                displayTree(tree);
+
+            } catch (e) {
+                log(`Error: ${e.message}`, 'error');
+                console.error(e);
+            }
+        }
+    </script>
+</body>
+
+</html>

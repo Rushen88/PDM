@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диагностика проблемы со структурой</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #1890ff;
+        }
+
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #1890ff;
+            padding-bottom: 10px;
+        }
+
+        .success {
+            color: #52c41a;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #ff4d4f;
+            font-weight: bold;
+        }
+
+        .warning {
+            color: #faad14;
+            font-weight: bold;
+        }
+
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .step {
+            margin: 15px 0;
+            padding: 15px;
+            background: #fafafa;
+            border-left: 4px solid #1890ff;
+        }
+
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            background: #1890ff;
+            color: white;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+
+        button:hover {
+            background: #40a9ff;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+
+        .result.success {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+        }
+
+        .result.error {
+            background: #fff1f0;
+            border: 1px solid #ffccc7;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>🔍 Диагностика проблемы со структурой СТЕНД 001</h1>
+        <p>Эта страница поможет выявить причину отображения 19 гаек и 31 болта вместо правильной иерархии.</p>
+    </div>
+
+    <div class="card">
+        <h2>📋 Что нужно сделать:</h2>
+
+        <div class="step">
+            <span class="step-number">1</span>
+            <strong>Откройте DevTools (F12)</strong><br>
+            Нажмите F12 в браузере для открытия консоли разработчика
+        </div>
+
+        <div class="step">
+            <span class="step-number">2</span>
+            <strong>Перейдите на вкладку Console</strong><br>
+            Убедитесь что выбрана вкладка "Console" (Консоль)
+        </div>
+
+        <div class="step">
+            <span class="step-number">3</span>
+            <strong>Очистите консоль</strong><br>
+            Нажмите кнопку очистки или используйте Ctrl+L
+        </div>
+
+        <div class="step">
+            <span class="step-number">4</span>
+            <strong>Нажмите кнопку ниже для теста</strong>
+        </div>
+
+        <button onclick="runDiagnostic()">▶ Запустить диагностику</button>
+
+        <div id="result"></div>
+    </div>
+
+    <div class="card">
+        <h2>❓ Часто задаваемые вопросы:</h2>
+
+        <h3>В: Где я должен увидеть структуру?</h3>
+        <p><strong>О:</strong> Откройте http://localhost:3000 → Войдите как admin/admin123 → Откройте проект "СТЕНД 001"
+            → Перейдите на вкладку <span class="warning">"Структура"</span></p>
+
+        <h3>В: Я вижу 19 гаек и 31 болт. Это правильно?</h3>
+        <p><strong>О:</strong> <span class="error">НЕТ!</span> Это ошибка. Должна отображаться иерархия с 8 детьми
+            корня.</p>
+
+        <h3>В: На какой вкладке я должен смотреть?</h3>
+        <p><strong>О:</strong> Вкладка <span class="warning">"Структура"</span>, а НЕ "Производство" или "Закупки"</p>
+
+        <h3>В: Я сделал перезагрузку страницы?</h3>
+        <p><strong>О:</strong> Сделайте <span class="warning">ЖЁСТКУЮ перезагрузку</span>: Ctrl+Shift+R или Ctrl+F5</p>
+    </div>
+
+    <div class="card">
+        <h2>✅ Правильная структура (ожидаемая):</h2>
+        <pre>
+СТЕНД 001 (корень) ← 1 элемент
+├─ гайка (0 детей) ← лист
+├─ реле (0 детей) ← лист  
+├─ Система 0002 (4 детей) ← можно раскрыть
+├─ Система 0001 (6 детей) ← можно раскрыть
+├─ Подсистема 00003 (4 детей) ← можно раскрыть
+├─ Подсистема 00002 (3 детей) ← можно раскрыть
+├─ Подсистема 00001 (3 детей) ← можно раскрыть
+└─ сб. ед. 000003 (3 детей) ← можно раскрыть
+
+ИТОГО: 8 прямых детей корня
+        </pre>
+    </div>
+
+    <div class="card">
+        <h2>❌ Неправильное отображение (баг):</h2>
+        <pre>
+СТЕНД 001 (корень)
+гайка (1-я)
+гайка (2-я)
+гайка (3-я)
+... 16 ещё ...
+гайка (19-я)
+болт (1-й)
+болт (2-й)
+... 29 ещё ...
+болт (31-й)
+
+ИТОГО: Плоский список из 50 элементов (19+31)
+        </pre>
+    </div>
+
+    <script>
+        async function runDiagnostic() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>⏳ Выполняется диагностика...</p>';
+
+            try {
+                // 1. Проверка доступности API
+                console.log('%c[ДИАГНОСТИКА] Проверка API...', 'color: blue; font-weight: bold;');
+
+                const projectId = localStorage.getItem('lastProjectId') || '85775ffe-4a38-477b-a267-e416ae3e126d';
+                const token = localStorage.getItem('token');
+
+                if (!token) {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <strong>❌ Ошибка:</strong> Вы не авторизованы. Войдите в систему через http://localhost:3000
+                        </div>
+                    `;
+                    return;
+                }
+
+                const response = await fetch(`http://localhost:8000/api/v1/projects/${projectId}/items/?page_size=1000`, {
+                    headers: {
+                        'Authorization': `Token ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API вернул статус: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('%c[ДИАГНОСТИКА] Получены данные:', 'color: green; font-weight: bold;', data);
+
+                const items = data.results || [];
+
+                // 2. Анализ данных
+                const rootItems = items.filter(i => !i.parent_item);
+                const withParent = items.filter(i => i.parent_item);
+
+                console.log(`%c[ДИАГНОСТИКА] Корневых элементов: ${rootItems.length}`, 'color: blue;');
+                console.log(`%c[ДИАГНОСТИКА] С родителем: ${withParent.length}`, 'color: blue;');
+
+                if (rootItems.length === 1) {
+                    const root = rootItems[0];
+                    const directChildren = items.filter(i => i.parent_item === root.id);
+
+                    console.log(`%c[ДИАГНОСТИКА] Прямых детей корня: ${directChildren.length}`, 'color: green; font-weight: bold;');
+                    console.log('%c[ДИАГНОСТИКА] Дети корня:', 'color: green;', directChildren.map(c => c.name));
+
+                    // Проверка гаек и болтов
+                    const gaikaItems = items.filter(i => i.name && i.name.toLowerCase().includes('гайка'));
+                    const boltItems = items.filter(i => i.name && i.name.toLowerCase().includes('болт'));
+
+                    console.log(`%c[ДИАГНОСТИКА] Гаек всего: ${gaikaItems.length}`, 'color: orange;');
+                    console.log(`%c[ДИАГНОСТИКА] Болтов всего: ${boltItems.length}`, 'color: orange;');
+
+                    // Группируем гайки по родителям
+                    const gaikaParents = new Set(gaikaItems.map(i => i.parent_item).filter(Boolean));
+                    const boltParents = new Set(boltItems.map(i => i.parent_item).filter(Boolean));
+
+                    console.log(`%c[ДИАГНОСТИКА] Гайки распределены по ${gaikaParents.size} родителям`, 'color: orange;');
+                    console.log(`%c[ДИАГНОСТИКА] Болты распределены по ${boltParents.size} родителям`, 'color: orange;');
+
+                    let diagnosis = '';
+                    if (directChildren.length === 8) {
+                        diagnosis = `
+                            <div class="result success">
+                                <strong>✅ API возвращает ПРАВИЛЬНЫЕ данные!</strong><br><br>
+                                • Корневой элемент: ${root.name}<br>
+                                • Прямых детей: ${directChildren.length}<br>
+                                • Всего элементов: ${items.length}<br>
+                                • Гаек распределено по ${gaikaParents.size} родителям<br>
+                                • Болтов распределено по ${boltParents.size} родителям<br><br>
+                                
+                                <strong>Вывод:</strong> Проблема на ФРОНТЕНДЕ!<br><br>
+                                
+                                <strong>Решение:</strong><br>
+                                1. Сделайте ЖЁСТКУЮ перезагрузку: Ctrl+Shift+R<br>
+                                2. Очистите кэш браузера: Ctrl+Shift+Delete<br>
+                                3. Убедитесь что смотрите на вкладку "Структура", а не "Производство"<br>
+                                4. Проверьте консоль браузера на наличие ошибок JavaScript
+                            </div>
+                        `;
+                    } else {
+                        diagnosis = `
+                            <div class="result error">
+                                <strong>❌ API возвращает НЕПРАВИЛЬНЫЕ данные!</strong><br><br>
+                                • Ожидалось: 8 детей корня<br>
+                                • Получено: ${directChildren.length} детей корня<br><br>
+                                
+                                <strong>Вывод:</strong> Проблема в БД или API!
+                            </div>
+                        `;
+                    }
+
+                    resultDiv.innerHTML = diagnosis;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <strong>❌ Ошибка структуры данных!</strong><br><br>
+                            • Найдено корневых элементов: ${rootItems.length}<br>
+                            • Ожидалось: 1<br><br>
+                            
+                            <strong>Вывод:</strong> Проблема в БД - неправильные parent_id связи!
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                console.error('[ДИАГНОСТИКА] Ошибка:', error);
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <strong>❌ Ошибка при выполнении диагностики:</strong><br><br>
+                        ${error.message}<br><br>
+                        
+                        Убедитесь что:<br>
+                        • Backend запущен на http://localhost:8000<br>
+                        • Вы авторизованы в системе<br>
+                        • Проект СТЕНД 001 существует
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+
+</html>

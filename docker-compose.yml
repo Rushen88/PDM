@@ -1,0 +1,192 @@
+# =============================================================================
+# PDM - Project Data Management System
+# Docker Compose Configuration
+# =============================================================================
+
+version: '3.9'
+
+services:
+  # ===========================================================================
+  # Backend API (Django + DRF)
+  # ===========================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pdm_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.prod
+      - DATABASE_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4"
+    networks:
+      - pdm_network
+
+  # ===========================================================================
+  # WebSocket Server (Django Channels with Daphne)
+  # ===========================================================================
+  websocket:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pdm_websocket
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.prod
+      - DATABASE_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8001:8001"
+    depends_on:
+      - db
+      - redis
+    command: daphne -b 0.0.0.0 -p 8001 config.asgi:application
+    networks:
+      - pdm_network
+
+  # ===========================================================================
+  # Celery Worker
+  # ===========================================================================
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pdm_celery_worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.prod
+      - DATABASE_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - media_volume:/app/media
+    depends_on:
+      - db
+      - redis
+    command: celery -A config worker -l INFO --concurrency=4
+    networks:
+      - pdm_network
+
+  # ===========================================================================
+  # Celery Beat (Scheduler)
+  # ===========================================================================
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pdm_celery_beat
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.prod
+      - DATABASE_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+      - redis
+    command: celery -A config beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    networks:
+      - pdm_network
+
+  # ===========================================================================
+  # PostgreSQL Database
+  # ===========================================================================
+  db:
+    image: postgres:15-alpine
+    container_name: pdm_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${DB_NAME:-PDM}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-RuSH.73501505wW}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - pdm_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================================================
+  # Redis (Cache & Message Broker)
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: pdm_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - pdm_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================================================
+  # Nginx (Reverse Proxy)
+  # ===========================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: pdm_nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - websocket
+    networks:
+      - pdm_network
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  pdm_network:
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:
